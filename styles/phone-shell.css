@@ -1371,3 +1371,31 @@ html[data-force-mobile] .splash-shell-wrap .phone-frame {
   display: grid;
   place-items: center;
 }
+
+/* ── zoom 失效兜底（老 WebKit）──
+   iPadOS 18 之前的 WebKit 不认 zoom:var(--shell-zoom) 这种写法：变量把壳
+   缩小成 100vw/zoom，zoom 却没把它放大回来，表现为居中小屏+大片留白。
+   layout.tsx 的 head 内联脚本探测到 zoom 不生效时在 <html> 打
+   data-zoom-fallback，本块改用 transform: scale 完成同样的整屏放大。
+   只有大屏触摸档会写入 --shell-zoom；其余设备缩放系数恒为 1 且不会打
+   这个标记，本块零影响。必须放在文件末尾：与各无壳块同特异性，靠
+   书写顺序压过它们。 */
+
+/* 布局盒是缩小前的尺寸（100vw/zoom），scale 以左上角为锚放大后才铺满；
+   若保持水平居中，放大后会向右溢出——强制左上对齐。 */
+html[data-zoom-fallback] .app-root:not(.account-gate-root) {
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+html[data-zoom-fallback] .phone-shell-wrap {
+  zoom: 1;
+  margin-inline: 0;
+  /* zoom 会连同自身 margin 一起放大，所以原规则把 drop 预先除以 zoom；
+     transform 不放大 margin，这里直接用物理像素。 */
+  margin-top: calc(-1 * var(--status-bar-drop, 0px));
+  /* scale 在外、translate 在里：键盘抬升量（物理像素）先除以 zoom 再被
+     scale 乘回来，视觉位移与 zoom 路径完全一致。 */
+  transform: scale(var(--shell-zoom, 1)) translate3d(0, calc(-1 * var(--mobile-keyboard-lift, 0px) / var(--shell-zoom, 1)), 0);
+  transform-origin: top left;
+}

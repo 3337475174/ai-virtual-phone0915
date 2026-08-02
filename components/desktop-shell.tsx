@@ -657,14 +657,14 @@ function placeIconOnAvailablePage(
 }
 
 /** Convert pointer screen position to a grid cell (0-based) */
-/** 桌面/平板模式下壳被 zoom 等比放大；computed 样式是布局值，rect/clientX 是
- *  视觉值——两个空间换算都要乘/除这个系数。手机模式恒为 1。 */
+/** 桌面/平板模式下壳被 zoom（或 data-zoom-fallback 时 transform:scale）等比
+ *  放大；computed 样式是布局值，rect/clientX 是视觉值——两个空间换算都要
+ *  乘/除这个系数。直接读 <html> 上的 --shell-zoom（两条缩放路径共同的事实
+ *  来源；老 WebKit 兜底路径下 computed zoom 恒为 1，读不到真实系数）。
+ *  手机模式没有这个变量，恒为 1。 */
 function getShellZoom(): number {
   if (typeof document === "undefined") return 1;
-  const wrap = document.querySelector<HTMLElement>('.phone-shell-wrap[data-main-shell]')
-    || document.querySelector<HTMLElement>(".phone-shell-wrap");
-  if (!wrap) return 1;
-  const z = parseFloat((getComputedStyle(wrap) as CSSStyleDeclaration & { zoom?: string }).zoom || "1");
+  const z = parseFloat(document.documentElement.style.getPropertyValue("--shell-zoom") || "1");
   return Number.isFinite(z) && z > 0 ? z : 1;
 }
 
